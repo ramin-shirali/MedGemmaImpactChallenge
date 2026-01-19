@@ -67,13 +67,17 @@ class ModelConfig(BaseModel):
         default="google/medgemma-4b-it",
         description="HuggingFace model ID for MedGemma"
     )
+    skip_model_loading: bool = Field(
+        default=False,
+        description="Skip loading the LLM (tools-only mode)"
+    )
     device: DeviceType = Field(
         default=DeviceType.AUTO,
         description="Device to run model on"
     )
     quantization: QuantizationType = Field(
-        default=QuantizationType.INT4,
-        description="Quantization type for model (int4=~4GB, int8=~8GB, none=~16GB)"
+        default=QuantizationType.NONE,
+        description="Quantization type for model (int4=~4GB, int8=~8GB, none=~16GB). Note: int4/int8 require Linux+NVIDIA"
     )
     max_length: int = Field(
         default=4096,

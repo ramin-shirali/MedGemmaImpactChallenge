@@ -176,11 +176,19 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
 
     async def _load_model(self) -> None:
         """Load the MedGemma model."""
+        model_config = self._config.model
+
+        # Skip model loading if configured (tools-only mode)
+        if model_config.skip_model_loading:
+            logger.info("Skipping model loading (tools-only mode)")
+            self._model = None
+            self._processor = None
+            return
+
         try:
             from transformers import AutoProcessor, AutoModelForCausalLM
             import torch
 
-            model_config = self._config.model
             device = model_config.get_device()
 
             logger.info(f"Loading model: {model_config.model_id}")
