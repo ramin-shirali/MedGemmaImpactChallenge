@@ -207,8 +207,8 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
             elif model_config.quantization == "int4":
                 model_kwargs["load_in_4bit"] = True
 
-            # Handle flash attention
-            if model_config.use_flash_attention:
+            # Handle flash attention (auto-checks availability)
+            if model_config.should_use_flash_attention():
                 model_kwargs["attn_implementation"] = "flash_attention_2"
 
             # Get HuggingFace token if available

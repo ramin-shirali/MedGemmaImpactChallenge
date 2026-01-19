@@ -106,9 +106,9 @@ class ModelConfig(BaseModel):
         default=True,
         description="Trust remote code from HuggingFace"
     )
-    use_flash_attention: bool = Field(
-        default=True,
-        description="Use Flash Attention 2 if available"
+    use_flash_attention: Optional[bool] = Field(
+        default=None,
+        description="Use Flash Attention 2. None=auto-detect, True=force on, False=force off"
     )
 
     def get_device(self) -> str:
@@ -124,6 +124,34 @@ class ModelConfig(BaseModel):
                 pass
             return "cpu"
         return self.device.value
+
+    @staticmethod
+    def is_flash_attention_available() -> bool:
+        """Check if FlashAttention2 is available on this system."""
+        import sys
+        if sys.platform != "linux":
+            return False
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                return False
+            # Check for Ampere+ GPU (compute capability >= 8.0)
+            capability = torch.cuda.get_device_capability()
+            if capability[0] < 8:
+                return False
+            # Check if flash_attn is installed
+            import importlib.util
+            return importlib.util.find_spec("flash_attn") is not None
+        except Exception:
+            return False
+
+    def should_use_flash_attention(self) -> bool:
+        """Determine if flash attention should be used."""
+        if self.use_flash_attention is None:
+            # Auto-detect: use if available
+            return self.is_flash_attention_available()
+        # Explicit setting: respect user's choice
+        return self.use_flash_attention
 
 
 class APIKeysConfig(BaseModel):
