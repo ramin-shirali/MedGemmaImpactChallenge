@@ -72,8 +72,8 @@ class ModelConfig(BaseModel):
         description="Device to run model on"
     )
     quantization: QuantizationType = Field(
-        default=QuantizationType.NONE,
-        description="Quantization type for model"
+        default=QuantizationType.INT4,
+        description="Quantization type for model (int4=~4GB, int8=~8GB, none=~16GB)"
     )
     max_length: int = Field(
         default=4096,
