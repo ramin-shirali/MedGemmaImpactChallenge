@@ -1,0 +1,69 @@
+[project]
+name = "medgemma-agent"
+version = "1.0.0"
+description = "A modular medical AI agent framework powered by MedGemma"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "MedGemma Team"}
+]
+keywords = ["medical", "ai", "healthcare", "medgemma", "agent"]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "transformers>=4.40.0",
+    "torch>=2.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "aiohttp>=3.9.0",
+    "httpx>=0.27.0",
+    "rich>=13.0.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "gradio>=4.0.0",
+    "python-multipart>=0.0.9",
+    "pydicom>=2.4.0",
+    "fhir.resources>=7.0.0",
+    "hl7>=0.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+medgemma = "interfaces.cli:run"
+medgemma-api = "interfaces.api:run"
+medgemma-ui = "interfaces.gradio_ui:launch"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["core", "tools", "interfaces"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
