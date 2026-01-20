@@ -68,8 +68,8 @@ class ModelConfig(BaseModel):
         description="HuggingFace model ID for MedGemma"
     )
     skip_model_loading: bool = Field(
-        default=True,
-        description="Skip loading the LLM (tools-only mode). Set to False on Linux+GPU with 16GB+ VRAM"
+        default=False,
+        description="Skip loading the LLM (tools-only mode)"
     )
     device: DeviceType = Field(
         default=DeviceType.AUTO,
@@ -83,7 +83,13 @@ class ModelConfig(BaseModel):
         default=4096,
         ge=128,
         le=32768,
-        description="Maximum sequence length"
+        description="Maximum total sequence length (input + output)"
+    )
+    max_new_tokens: int = Field(
+        default=512,
+        ge=32,
+        le=4096,
+        description="Maximum new tokens to generate per response"
     )
     temperature: float = Field(
         default=0.7,

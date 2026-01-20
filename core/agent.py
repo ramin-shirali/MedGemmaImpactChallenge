@@ -191,6 +191,10 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
 
             device = model_config.get_device()
 
+            import sys
+            print(f"Loading model: {model_config.model_id}", flush=True)
+            print(f"Device: {device}", flush=True)
+            sys.stdout.flush()
             logger.info(f"Loading model: {model_config.model_id}")
             logger.info(f"Device: {device}")
 
@@ -209,11 +213,13 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
                 if model_config.torch_dtype in dtype_map:
                     model_kwargs["torch_dtype"] = dtype_map[model_config.torch_dtype]
 
-            # Handle quantization
-            if model_config.quantization == "int8":
-                model_kwargs["load_in_8bit"] = True
-            elif model_config.quantization == "int4":
-                model_kwargs["load_in_4bit"] = True
+            # Handle quantization (only on Linux+CUDA)
+            import sys
+            if sys.platform == "linux" and device == "cuda":
+                if model_config.quantization == "int8":
+                    model_kwargs["load_in_8bit"] = True
+                elif model_config.quantization == "int4":
+                    model_kwargs["load_in_4bit"] = True
 
             # Handle flash attention (auto-checks availability)
             if model_config.should_use_flash_attention():
@@ -229,25 +235,53 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
                 token=token
             )
 
-            # Load model
-            self._model = AutoModelForCausalLM.from_pretrained(
-                model_config.model_id,
-                device_map=device if device != "cpu" else None,
-                token=token,
-                **model_kwargs
-            )
-
-            if device == "cpu":
+            # Load model - handle MPS (macOS) differently
+            if device == "mps":
+                # For MPS, use float32 to avoid numerical instability (inf/nan errors)
+                # float16 on MPS can cause precision issues during generation
+                model_kwargs["torch_dtype"] = torch.float32
+                print("Using float32 for MPS (more stable than float16)", flush=True)
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    model_config.model_id,
+                    token=token,
+                    low_cpu_mem_usage=True,
+                    **model_kwargs
+                )
+                self._model = self._model.to("mps")
+            elif device == "cuda":
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    model_config.model_id,
+                    device_map="auto",
+                    token=token,
+                    **model_kwargs
+                )
+            else:
+                # CPU
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    model_config.model_id,
+                    token=token,
+                    **model_kwargs
+                )
                 self._model = self._model.to(device)
 
+            print("✓ Model loaded successfully", flush=True)
             logger.info("Model loaded successfully")
 
         except ImportError as e:
+            print(f"⚠ Could not load transformers: {e}", flush=True)
+            print("Running in tool-only mode without model", flush=True)
+            import sys
+            sys.stdout.flush()
             logger.warning(f"Could not load transformers: {e}")
-            logger.warning("Running in tool-only mode without model")
             self._model = None
             self._processor = None
         except Exception as e:
+            print(f"✗ Error loading model: {e}", flush=True)
+            import sys
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
+            sys.stderr.flush()
             logger.error(f"Error loading model: {e}")
             self._model = None
             self._processor = None
@@ -524,7 +558,7 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
         with torch.no_grad():
             outputs = self._model.generate(
                 **inputs,
-                max_new_tokens=self._config.model.max_length,
+                max_new_tokens=self._config.model.max_new_tokens,  # Default 512, not 4096
                 temperature=self._config.model.temperature,
                 top_p=self._config.model.top_p,
                 top_k=self._config.model.top_k,

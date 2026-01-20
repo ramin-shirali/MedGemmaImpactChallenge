@@ -21,32 +21,79 @@ registry = None
 async def initialize_agent():
     """Initialize the agent and registry."""
     global agent, registry
+    import sys
+
+    print("[1/5] Importing modules...", flush=True)
+    sys.stdout.flush()
 
     from core.agent import MedGemmaAgent
     from core.registry import ToolRegistry
     from core.config import MedGemmaConfig
 
+    print("[2/5] Creating config...", flush=True)
+    sys.stdout.flush()
     config = MedGemmaConfig()
+    print(f"      skip_model_loading={config.model.skip_model_loading}", flush=True)
+    print(f"      device={config.model.get_device()}", flush=True)
+    sys.stdout.flush()
 
+    print("[3/5] Setting up registry...", flush=True)
+    sys.stdout.flush()
     registry = ToolRegistry()
     registry.auto_discover()
+    print(f"      Found {len(registry.list_tools())} tools", flush=True)
+    sys.stdout.flush()
 
+    print("[4/5] Creating agent and initializing...", flush=True)
+    sys.stdout.flush()
     agent = MedGemmaAgent(config=config)
     await agent.initialize()
 
-    return f"Initialized with {len(registry.list_tools())} tools"
+    print("[5/5] Checking model status...", flush=True)
+    sys.stdout.flush()
+    # Check if model loaded
+    model_loaded = agent._model is not None
+    processor_loaded = agent._processor is not None
+    print(f"      model={model_loaded}, processor={processor_loaded}", flush=True)
+    sys.stdout.flush()
+
+    model_status = "with LLM" if model_loaded else "tools-only (no LLM)"
+    return f"Initialized {model_status}, {len(registry.list_tools())} tools available"
 
 
 def sync_initialize():
     """Synchronous wrapper for initialization."""
-    return asyncio.run(initialize_agent())
+    import sys
+
+    # Check if there's already a running event loop
+    try:
+        loop = asyncio.get_running_loop()
+        # We're inside an async context (like Gradio), use nest_asyncio or run_coroutine_threadsafe
+        print("Running inside existing event loop", flush=True)
+        sys.stdout.flush()
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future = pool.submit(asyncio.run, initialize_agent())
+            return future.result()
+    except RuntimeError:
+        # No running loop, safe to use asyncio.run
+        print("No existing event loop, using asyncio.run", flush=True)
+        sys.stdout.flush()
+        return asyncio.run(initialize_agent())
 
 
 async def process_query_async(query: str, history: list) -> Tuple[str, list]:
     """Process a query asynchronously."""
     if not agent:
         history.append(gr.ChatMessage(role="user", content=query))
-        history.append(gr.ChatMessage(role="assistant", content="Please initialize the agent first."))
+        history.append(gr.ChatMessage(role="assistant", content="Please click 'Initialize Agent' first."))
+        return "", history
+
+    # Check if model is loaded
+    has_model = hasattr(agent, '_model') and agent._model is not None
+    if not has_model:
+        history.append(gr.ChatMessage(role="user", content=query))
+        history.append(gr.ChatMessage(role="assistant", content="Model not loaded. Running in tools-only mode. Please use the Document Analysis or Image Analysis tabs, or try specific tools."))
         return "", history
 
     try:
@@ -320,7 +367,7 @@ def get_tools_list() -> str:
 def create_ui() -> gr.Blocks:
     """Create the Gradio interface."""
 
-    with gr.Blocks(title="MedGemma Agent", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="MedGemma Agent") as demo:
         gr.Markdown("""
         # MedGemma Agent Framework
 
@@ -458,8 +505,37 @@ def create_ui() -> gr.Blocks:
 
 def launch(share: bool = False, server_port: int = 7860):
     """Launch the Gradio interface."""
+    import sys
+
+    # Auto-initialize agent before launching
+    print("=" * 50, flush=True)
+    print("Initializing MedGemma Agent...", flush=True)
+    print("=" * 50, flush=True)
+    sys.stdout.flush()
+
+    try:
+        result = sync_initialize()
+        print(f"✓ {result}", flush=True)
+        # Verify model state
+        if agent and agent._model is not None:
+            print(f"✓ Model verified: {type(agent._model).__name__}", flush=True)
+        else:
+            print("⚠ Model is None after initialization", flush=True)
+        sys.stdout.flush()
+    except Exception as e:
+        import traceback
+        print(f"⚠ Initialization error: {e}", flush=True)
+        traceback.print_exc()
+        print("Running in tools-only mode", flush=True)
+        sys.stdout.flush()
+
+    print("=" * 50, flush=True)
+    print("Starting Gradio UI...", flush=True)
+    print("=" * 50, flush=True)
+    sys.stdout.flush()
+
     demo = create_ui()
-    demo.launch(share=share, server_port=server_port)
+    demo.launch(share=share, server_port=server_port, theme=gr.themes.Soft())
 
 
 if __name__ == "__main__":
