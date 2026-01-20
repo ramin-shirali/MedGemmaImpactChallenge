@@ -68,8 +68,8 @@ class ModelConfig(BaseModel):
         description="HuggingFace model ID for MedGemma"
     )
     skip_model_loading: bool = Field(
-        default=False,
-        description="Skip loading the LLM (tools-only mode)"
+        default=True,
+        description="Skip loading the LLM (tools-only mode). Set to False on Linux+GPU with 16GB+ VRAM"
     )
     device: DeviceType = Field(
         default=DeviceType.AUTO,

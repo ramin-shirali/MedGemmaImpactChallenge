@@ -42,20 +42,32 @@ def sync_initialize():
     return asyncio.run(initialize_agent())
 
 
-async def process_query_async(query: str, history: List[Tuple[str, str]]) -> Tuple[str, List[Tuple[str, str]]]:
+async def process_query_async(query: str, history: list) -> Tuple[str, list]:
     """Process a query asynchronously."""
     if not agent:
-        return "Please initialize the agent first.", history
+        history.append(gr.ChatMessage(role="user", content=query))
+        history.append(gr.ChatMessage(role="assistant", content="Please initialize the agent first."))
+        return "", history
 
     try:
         response = await agent.process(query)
-        history.append((query, response))
+        # Extract message string from response object
+        if hasattr(response, 'message'):
+            response_text = response.message or "No response generated."
+        elif isinstance(response, str):
+            response_text = response
+        else:
+            response_text = str(response)
+        history.append(gr.ChatMessage(role="user", content=query))
+        history.append(gr.ChatMessage(role="assistant", content=response_text))
         return "", history
     except Exception as e:
-        return f"Error: {e}", history
+        history.append(gr.ChatMessage(role="user", content=query))
+        history.append(gr.ChatMessage(role="assistant", content=f"Error: {e}"))
+        return "", history
 
 
-def process_query(query: str, history: List[Tuple[str, str]]) -> Tuple[str, List[Tuple[str, str]]]:
+def process_query(query: str, history: list) -> Tuple[str, list]:
     """Process a natural language query."""
     return asyncio.run(process_query_async(query, history))
 
