@@ -58,7 +58,7 @@ class MedGemmaCLI:
             progress.remove_task(task)
 
         tool_count = len(self.registry.list_tools())
-        self.console.print(f"[green]✓ Initialized with {tool_count} tools[/green]")
+        self.console.print(f"[green][OK] Initialized with {tool_count} tools[/green]")
 
     def print_welcome(self):
         """Print welcome message."""

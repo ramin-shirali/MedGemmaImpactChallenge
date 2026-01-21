@@ -51,13 +51,13 @@ async def initialize_agent():
 
     print("[5/5] Checking model status...", flush=True)
     sys.stdout.flush()
-    # Check if model loaded
-    model_loaded = agent._model is not None
-    processor_loaded = agent._processor is not None
-    print(f"      model={model_loaded}, processor={processor_loaded}", flush=True)
+    # Check if model loaded (Vertex AI or local)
+    using_vertex_ai = getattr(agent, '_use_vertex_ai', False)
+    model_loaded = using_vertex_ai or (agent._model is not None and agent._processor is not None)
+    print(f"      vertex_ai={using_vertex_ai}, model={agent._model is not None}, processor={agent._processor is not None}", flush=True)
     sys.stdout.flush()
 
-    model_status = "with LLM" if model_loaded else "tools-only (no LLM)"
+    model_status = "with Vertex AI" if using_vertex_ai else ("with local LLM" if model_loaded else "tools-only (no LLM)")
     return f"Initialized {model_status}, {len(registry.list_tools())} tools available"
 
 
@@ -89,8 +89,10 @@ async def process_query_async(query: str, history: list) -> Tuple[str, list]:
         history.append(gr.ChatMessage(role="assistant", content="Please click 'Initialize Agent' first."))
         return "", history
 
-    # Check if model is loaded
-    has_model = hasattr(agent, '_model') and agent._model is not None
+    # Check if model is loaded (Vertex AI or local)
+    using_vertex_ai = getattr(agent, '_use_vertex_ai', False)
+    has_local_model = hasattr(agent, '_model') and agent._model is not None and agent._processor is not None
+    has_model = using_vertex_ai or has_local_model
     if not has_model:
         history.append(gr.ChatMessage(role="user", content=query))
         history.append(gr.ChatMessage(role="assistant", content="Model not loaded. Running in tools-only mode. Please use the Document Analysis or Image Analysis tabs, or try specific tools."))
@@ -515,16 +517,19 @@ def launch(share: bool = False, server_port: int = 7860):
 
     try:
         result = sync_initialize()
-        print(f"✓ {result}", flush=True)
+        print(f"[OK] {result}", flush=True)
         # Verify model state
-        if agent and agent._model is not None:
-            print(f"✓ Model verified: {type(agent._model).__name__}", flush=True)
+        using_vertex_ai = agent and getattr(agent, '_use_vertex_ai', False)
+        if using_vertex_ai:
+            print(f"[OK] Using Vertex AI for inference", flush=True)
+        elif agent and agent._model is not None:
+            print(f"[OK] Local model verified: {type(agent._model).__name__}", flush=True)
         else:
-            print("⚠ Model is None after initialization", flush=True)
+            print("[WARN] No model available after initialization", flush=True)
         sys.stdout.flush()
     except Exception as e:
         import traceback
-        print(f"⚠ Initialization error: {e}", flush=True)
+        print(f"[WARN] Initialization error: {e}", flush=True)
         traceback.print_exc()
         print("Running in tools-only mode", flush=True)
         sys.stdout.flush()

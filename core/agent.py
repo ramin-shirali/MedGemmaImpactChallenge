@@ -116,6 +116,8 @@ class MedGemmaAgent:
         self._memory: Optional[ConversationMemory] = None
         self._model = None
         self._processor = None
+        self._vertex_endpoint = None
+        self._use_vertex_ai = False
         self._initialized = False
 
         # Default system prompt
@@ -175,7 +177,9 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
         logger.info("MedGemma Agent initialized successfully")
 
     async def _load_model(self) -> None:
-        """Load the MedGemma model."""
+        """Load the MedGemma model (Vertex AI if available, otherwise local)."""
+        import sys
+
         model_config = self._config.model
 
         # Skip model loading if configured (tools-only mode)
@@ -183,16 +187,30 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
             logger.info("Skipping model loading (tools-only mode)")
             self._model = None
             self._processor = None
+            self._use_vertex_ai = False
             return
 
+        # Check if Vertex AI is available (preferred - much faster)
+        if self._config.api_keys.is_vertex_ai_available():
+            print("[OK] Vertex AI credentials found - using cloud inference (faster)", flush=True)
+            sys.stdout.flush()
+            try:
+                await self._setup_vertex_ai()
+                return
+            except Exception as e:
+                print(f"[WARN] Vertex AI setup failed: {e}", flush=True)
+                print("Falling back to local model...", flush=True)
+                sys.stdout.flush()
+
+        # Fall back to local model loading
+        self._use_vertex_ai = False
         try:
             from transformers import AutoProcessor, AutoModelForCausalLM
             import torch
 
             device = model_config.get_device()
 
-            import sys
-            print(f"Loading model: {model_config.model_id}", flush=True)
+            print(f"Loading local model: {model_config.model_id}", flush=True)
             print(f"Device: {device}", flush=True)
             sys.stdout.flush()
             logger.info(f"Loading model: {model_config.model_id}")
@@ -264,11 +282,11 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
                 )
                 self._model = self._model.to(device)
 
-            print("✓ Model loaded successfully", flush=True)
+            print("[OK] Model loaded successfully", flush=True)
             logger.info("Model loaded successfully")
 
         except ImportError as e:
-            print(f"⚠ Could not load transformers: {e}", flush=True)
+            print(f"[WARN] Could not load transformers: {e}", flush=True)
             print("Running in tool-only mode without model", flush=True)
             import sys
             sys.stdout.flush()
@@ -276,7 +294,7 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
             self._model = None
             self._processor = None
         except Exception as e:
-            print(f"✗ Error loading model: {e}", flush=True)
+            print(f"[ERROR] Error loading model: {e}", flush=True)
             import sys
             import traceback
             traceback.print_exc()
@@ -285,6 +303,131 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
             logger.error(f"Error loading model: {e}")
             self._model = None
             self._processor = None
+
+    async def _setup_vertex_ai(self) -> None:
+        """Set up Vertex AI client for cloud inference."""
+        import sys
+        import os
+
+        api_keys = self._config.api_keys
+
+        # Set credentials if specified
+        if api_keys.google_application_credentials:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = api_keys.google_application_credentials
+
+        print(f"Initializing Vertex AI...", flush=True)
+        print(f"  Project: {api_keys.vertex_ai_project}", flush=True)
+        print(f"  Location: {api_keys.vertex_ai_location}", flush=True)
+        print(f"  Endpoint: {api_keys.vertex_ai_endpoint}", flush=True)
+        sys.stdout.flush()
+
+        # Store config for API calls
+        self._vertex_project = api_keys.vertex_ai_project
+        self._vertex_location = api_keys.vertex_ai_location
+        self._vertex_endpoint_id = api_keys.vertex_ai_endpoint
+        self._vertex_endpoint_domain = api_keys.vertex_ai_endpoint_domain
+        self._use_vertex_ai = True
+        self._model = "vertex_ai"  # Marker to indicate model is available
+        self._processor = None  # Not needed for Vertex AI
+
+        print("[OK] Vertex AI initialized successfully", flush=True)
+        sys.stdout.flush()
+        logger.info("Vertex AI initialized successfully")
+
+    async def _generate_with_vertex_ai(self, query: str, files: List["FileInfo"]) -> str:
+        """Generate response using Vertex AI deployed endpoint."""
+        import base64
+        import json
+        import warnings
+        import google.auth
+        import google.auth.transport.requests
+        import requests
+        from urllib3.exceptions import InsecureRequestWarning
+
+        # Suppress SSL warnings for development
+        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+
+        # Get credentials
+        credentials, project = google.auth.default()
+        auth_req = google.auth.transport.requests.Request()
+        credentials.refresh(auth_req)
+
+        # Build the endpoint URL (dedicated endpoints use their own domain)
+        if self._vertex_endpoint_domain:
+            endpoint_url = (
+                f"https://{self._vertex_endpoint_domain}/v1/"
+                f"projects/{self._vertex_project}/locations/{self._vertex_location}/"
+                f"endpoints/{self._vertex_endpoint_id}:predict"
+            )
+        else:
+            # Fallback to shared domain (may not work for dedicated endpoints)
+            endpoint_url = (
+                f"https://{self._vertex_location}-aiplatform.googleapis.com/v1/"
+                f"projects/{self._vertex_project}/locations/{self._vertex_location}/"
+                f"endpoints/{self._vertex_endpoint_id}:predict"
+            )
+
+        # Build the prompt with system context
+        prompt = f"""You are MedGemma, a medical AI assistant. Provide helpful, accurate medical information.
+Always include appropriate disclaimers about seeking professional medical advice.
+
+User query: {query}"""
+
+        instance = {
+            "prompt": prompt,
+            "max_tokens": self._config.model.max_new_tokens,
+            "temperature": self._config.model.temperature,
+            "top_p": self._config.model.top_p,
+            "top_k": self._config.model.top_k,
+        }
+
+        # Add images if provided (base64 encoded)
+        for file_info in files:
+            if file_info.type in ["image", "dicom"]:
+                try:
+                    with open(file_info.path, "rb") as f:
+                        image_data = base64.b64encode(f.read()).decode("utf-8")
+                    instance["image"] = image_data
+                    break  # Only support one image for now
+                except Exception as e:
+                    logger.warning(f"Could not load image {file_info.path}: {e}")
+
+        # Prepare request payload
+        payload = {"instances": [instance]}
+
+        # Make the API call
+        headers = {
+            "Authorization": f"Bearer {credentials.token}",
+            "Content-Type": "application/json",
+        }
+
+        # Note: verify=False is used for development on macOS with SSL cert issues
+        # In production, use proper SSL certificates
+        response = await asyncio.to_thread(
+            requests.post,
+            endpoint_url,
+            headers=headers,
+            json=payload,
+            timeout=120,
+            verify=False
+        )
+
+        if response.status_code != 200:
+            raise Exception(f"Vertex AI API error: {response.status_code} - {response.text}")
+
+        result = response.json()
+
+        # Extract the response text
+        if "predictions" in result and result["predictions"]:
+            prediction = result["predictions"][0]
+            if isinstance(prediction, str):
+                return prediction
+            elif isinstance(prediction, dict):
+                return prediction.get("generated_text", prediction.get("output", str(prediction)))
+            else:
+                return str(prediction)
+
+        return "No response generated from the model."
 
     async def process(
         self,
@@ -449,8 +592,9 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
         files: List[FileInfo]
     ) -> AgentResponse:
         """Process query directly without planning."""
-        # If we have a model, use it
-        if self._model is not None and self._processor is not None:
+        # If we have a model (Vertex AI or local), use it
+        has_model = self._use_vertex_ai or (self._model is not None and self._processor is not None)
+        if has_model:
             response_text = await self._generate_with_model(query, files)
             return AgentResponse(message=response_text)
 
@@ -513,7 +657,12 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
         query: str,
         files: List[FileInfo]
     ) -> str:
-        """Generate response using the MedGemma model."""
+        """Generate response using the MedGemma model (Vertex AI or local)."""
+        # Use Vertex AI if available (much faster)
+        if getattr(self, '_use_vertex_ai', False):
+            return await self._generate_with_vertex_ai(query, files)
+
+        # Local model inference
         import torch
         from PIL import Image
 

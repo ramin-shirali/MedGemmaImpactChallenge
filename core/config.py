@@ -171,6 +171,28 @@ class APIKeysConfig(BaseModel):
         default=None,
         description="HuggingFace API token for gated models"
     )
+    # Vertex AI configuration
+    vertex_ai_project: Optional[str] = Field(
+        default=None,
+        description="Google Cloud project ID for Vertex AI"
+    )
+    vertex_ai_location: Optional[str] = Field(
+        default="us-central1",
+        description="Google Cloud region for Vertex AI"
+    )
+    vertex_ai_endpoint: Optional[str] = Field(
+        default=None,
+        description="Vertex AI endpoint ID for deployed MedGemma model"
+    )
+    vertex_ai_endpoint_domain: Optional[str] = Field(
+        default=None,
+        description="Vertex AI dedicated endpoint domain (e.g., 123456.europe-west4-projectnum.prediction.vertexai.goog)"
+    )
+    google_application_credentials: Optional[str] = Field(
+        default=None,
+        description="Path to Google Cloud service account JSON (or set GOOGLE_APPLICATION_CREDENTIALS env var)"
+    )
+    # Other API keys
     pubmed_api_key: Optional[str] = Field(
         default=None,
         description="NCBI PubMed API key"
@@ -183,6 +205,24 @@ class APIKeysConfig(BaseModel):
         default=None,
         description="UMLS API key for medical terminology"
     )
+
+    def is_vertex_ai_available(self) -> bool:
+        """Check if Vertex AI is configured and available."""
+        if not self.vertex_ai_project or not self.vertex_ai_endpoint:
+            return False
+        # Check for credentials
+        if self.google_application_credentials:
+            return True
+        # Check if GOOGLE_APPLICATION_CREDENTIALS env var is set
+        if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            return True
+        # Check for default credentials (gcloud auth)
+        try:
+            from google.auth import default
+            default()
+            return True
+        except Exception:
+            return False
 
 
 class LoggingConfig(BaseModel):
