@@ -154,13 +154,41 @@ async def analyze_image_async(
         # Convert image to base64
         import io
         from PIL import Image
+        from pathlib import Path
 
         if image is None:
             return "Please upload an image."
 
         buffered = io.BytesIO()
-        if isinstance(image, str):
-            # Image path
+        image_path = Path(image) if isinstance(image, str) else None
+
+        # Handle DICOM files
+        if image_path and image_path.suffix.lower() in [".dcm", ".dicom"]:
+            try:
+                import pydicom
+                from pydicom.pixel_data_handlers.util import apply_voi_lut
+
+                ds = pydicom.dcmread(str(image_path))
+                pixel_array = ds.pixel_array
+
+                # Apply VOI LUT for proper windowing
+                if hasattr(ds, 'WindowCenter') and hasattr(ds, 'WindowWidth'):
+                    pixel_array = apply_voi_lut(pixel_array, ds)
+
+                # Normalize to 8-bit
+                pixel_array = pixel_array - pixel_array.min()
+                if pixel_array.max() > 0:
+                    pixel_array = (pixel_array / pixel_array.max() * 255).astype('uint8')
+
+                img = Image.fromarray(pixel_array)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+            except ImportError:
+                return "DICOM support requires pydicom. Install with: uv add pydicom"
+            except Exception as e:
+                return f"Error reading DICOM file: {e}"
+        elif isinstance(image, str):
+            # Regular image path
             img = Image.open(image)
         else:
             img = Image.fromarray(image)
@@ -413,7 +441,11 @@ def create_ui() -> gr.Blocks:
             with gr.TabItem("Image Analysis"):
                 with gr.Row():
                     with gr.Column():
-                        image_input = gr.Image(label="Upload Medical Image")
+                        image_input = gr.File(
+                            label="Upload Medical Image",
+                            file_types=[".dcm", ".dicom", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".nii", ".nii.gz"],
+                            type="filepath"
+                        )
                         modality_dropdown = gr.Dropdown(
                             choices=["X-Ray", "CT Scan", "MRI", "Fundus", "Dermoscopy", "Ultrasound", "Histopathology"],
                             label="Image Modality",
