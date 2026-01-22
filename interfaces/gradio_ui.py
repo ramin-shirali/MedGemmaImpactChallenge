@@ -198,8 +198,7 @@ async def analyze_image_async(
 
         # Prepare input
         input_data = {
-            "image_data": image_base64,
-            "image_format": "image/png"
+            "image_base64": image_base64,
         }
 
         if body_region:
