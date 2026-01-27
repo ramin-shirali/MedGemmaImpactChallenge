@@ -396,7 +396,41 @@ def get_tools_list() -> str:
 def create_ui() -> gr.Blocks:
     """Create the Gradio interface."""
 
-    with gr.Blocks(title="MedGemma Agent") as demo:
+    # Modern vibrant theme - dark teal
+    theme = gr.themes.Base(
+        primary_hue=gr.themes.colors.teal,
+        secondary_hue=gr.themes.colors.teal,
+        neutral_hue=gr.themes.colors.gray,
+        font=gr.themes.GoogleFont("Inter"),
+    ).set(
+        body_background_fill="#080c0c",
+        body_background_fill_dark="#080c0c",
+        block_background_fill="#0d1414",
+        block_background_fill_dark="#0d1414",
+        block_border_color="#152525",
+        block_border_color_dark="#152525",
+        block_label_background_fill="#0d1414",
+        block_label_background_fill_dark="#0d1414",
+        block_title_text_color="#a0c4c4",
+        block_title_text_color_dark="#a0c4c4",
+        body_text_color="#90b0b0",
+        body_text_color_dark="#90b0b0",
+        button_primary_background_fill="#0d7377",
+        button_primary_background_fill_dark="#0d7377",
+        button_primary_background_fill_hover="#0f8a8f",
+        button_primary_background_fill_hover_dark="#0f8a8f",
+        button_primary_text_color="#ffffff",
+        button_secondary_background_fill="#152525",
+        button_secondary_background_fill_dark="#152525",
+        input_background_fill="#0a1010",
+        input_background_fill_dark="#0a1010",
+        input_border_color="#1a3030",
+        input_border_color_dark="#1a3030",
+        input_placeholder_color="#456060",
+        input_placeholder_color_dark="#456060",
+    )
+
+    with gr.Blocks(title="MedGemma Agent", theme=theme) as demo:
         gr.Markdown("""
         # MedGemma Agent Framework
 
@@ -571,7 +605,7 @@ def launch(share: bool = False, server_port: int = 7860):
     sys.stdout.flush()
 
     demo = create_ui()
-    demo.launch(share=share, server_port=server_port, theme=gr.themes.Soft())
+    demo.launch(share=share, server_port=server_port)
 
 
 if __name__ == "__main__":
