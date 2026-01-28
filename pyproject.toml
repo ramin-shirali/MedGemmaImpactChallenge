@@ -1,14 +1,14 @@
 [project]
-name = "medgemma-agent"
+name = "medicaition"
 version = "1.0.0"
 description = "A modular medical AI agent framework powered by MedGemma"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "MedGemma Team"}
+    {name = "MedicAItion Team"}
 ]
-keywords = ["medical", "ai", "healthcare", "medgemma", "agent"]
+keywords = ["medical", "ai", "healthcare", "medgemma", "agent", "medicaition"]
 
 dependencies = [
     "pydantic>=2.0.0",
@@ -45,9 +45,9 @@ dev = [
 ]
 
 [project.scripts]
-medgemma = "interfaces.cli:run"
-medgemma-api = "interfaces.api:run"
-medgemma-ui = "interfaces.gradio_ui:launch"
+medicaition = "interfaces.cli:run"
+medicaition-api = "interfaces.api:run"
+medicaition-ui = "interfaces.gradio_ui:launch"
 
 [build-system]
 requires = ["hatchling"]

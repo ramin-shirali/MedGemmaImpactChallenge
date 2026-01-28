@@ -38,7 +38,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from core.config import get_config, MedGemmaConfig
+from core.config import get_config, MedicAItionConfig
 
 
 class MessageRole(str, Enum):
@@ -292,7 +292,7 @@ class ConversationMemory:
 
     def __init__(
         self,
-        config: Optional[MedGemmaConfig] = None,
+        config: Optional[MedicAItionConfig] = None,
         max_turns: int = 50,
         max_tokens_estimate: int = 8000,
         system_prompt: Optional[str] = None
@@ -596,7 +596,7 @@ class ConversationMemory:
     def from_dict(
         cls,
         data: Dict[str, Any],
-        config: Optional[MedGemmaConfig] = None
+        config: Optional[MedicAItionConfig] = None
     ) -> "ConversationMemory":
         """Deserialize memory from dictionary."""
         memory = cls(config=config)
@@ -626,7 +626,7 @@ class ConversationMemory:
     def load(
         cls,
         file_path: str,
-        config: Optional[MedGemmaConfig] = None
+        config: Optional[MedicAItionConfig] = None
     ) -> "ConversationMemory":
         """Load memory from a JSON file."""
         with open(file_path, "r") as f:

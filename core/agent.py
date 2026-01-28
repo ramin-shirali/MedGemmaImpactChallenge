@@ -9,10 +9,10 @@ This module provides the main agent that orchestrates all components:
 - Coordinates planning and execution
 
 Usage:
-    from core.agent import MedGemmaAgent
+    from core.agent import MedicAItionAgent
 
     # Create and initialize agent
-    agent = MedGemmaAgent()
+    agent = MedicAItionAgent()
     await agent.initialize()
 
     # Process a query
@@ -35,7 +35,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from core.config import get_config, MedGemmaConfig, MEDICAL_DISCLAIMER
+from core.config import get_config, MedicAItionConfig, MEDICAL_DISCLAIMER
 from core.memory import ConversationMemory, PatientContext, MessageRole
 from core.planner import TaskPlanner, Plan, Task
 from core.registry import ToolRegistry, get_registry
@@ -90,7 +90,7 @@ class FileInfo(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
-class MedGemmaAgent:
+class MedicAItionAgent:
     """
     Main agent orchestrator for the MedGemma framework.
 
@@ -100,7 +100,7 @@ class MedGemmaAgent:
 
     def __init__(
         self,
-        config: Optional[MedGemmaConfig] = None,
+        config: Optional[MedicAItionConfig] = None,
         system_prompt: Optional[str] = None
     ):
         """
@@ -125,7 +125,7 @@ class MedGemmaAgent:
 
     def _get_default_system_prompt(self) -> str:
         """Get the default system prompt."""
-        return """You are MedGemma, an advanced medical AI assistant powered by Google's MedGemma model.
+        return """You are MedicAItion, an advanced medical AI assistant powered by Google's MedGemma model.
 
 Your capabilities include:
 - Analyzing medical images (CT, MRI, X-ray, pathology, dermoscopy, fundus, ultrasound)
@@ -368,7 +368,7 @@ Remember: You are an AI assistant. Your analysis should support, not replace, cl
             )
 
         # Build the prompt with system context
-        prompt = f"""You are MedGemma, a medical AI assistant. Provide helpful, accurate medical information.
+        prompt = f"""You are MedicAItion, a medical AI assistant. Provide helpful, accurate medical information.
 Always include appropriate disclaimers about seeking professional medical advice.
 
 User query: {query}"""
@@ -926,15 +926,15 @@ User query: {query}"""
 
     def __repr__(self) -> str:
         return (
-            f"<MedGemmaAgent(initialized={self._initialized}, "
+            f"<MedicAItionAgent(initialized={self._initialized}, "
             f"tools={len(self.get_available_tools())})>"
         )
 
 
 # Convenience function for quick usage
 async def create_agent(
-    config: Optional[MedGemmaConfig] = None
-) -> MedGemmaAgent:
+    config: Optional[MedicAItionConfig] = None
+) -> MedicAItionAgent:
     """
     Create and initialize a MedGemma agent.
 
@@ -944,6 +944,6 @@ async def create_agent(
     Returns:
         Initialized agent
     """
-    agent = MedGemmaAgent(config)
+    agent = MedicAItionAgent(config)
     await agent.initialize()
     return agent

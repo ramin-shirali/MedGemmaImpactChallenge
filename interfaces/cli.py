@@ -1,5 +1,5 @@
 """
-MedGemma Agent Framework - Command Line Interface
+MedicAItion Agent Framework - Command Line Interface
 
 Provides interactive CLI for the medical AI agent.
 """
@@ -21,8 +21,8 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 
-class MedGemmaCLI:
-    """Command-line interface for MedGemma Agent."""
+class MedicAItionCLI:
+    """Command-line interface for MedicAItion Agent."""
 
     def __init__(self):
         self.console = Console()
@@ -32,15 +32,15 @@ class MedGemmaCLI:
 
     async def initialize(self, model_id: Optional[str] = None):
         """Initialize the agent and registry."""
-        from core.agent import MedGemmaAgent
+        from core.agent import MedicAItionAgent
         from core.registry import ToolRegistry
-        from core.config import MedGemmaConfig
+        from core.config import MedicAItionConfig
 
-        config = MedGemmaConfig()
+        config = MedicAItionConfig()
         if model_id:
             config.model.model_id = model_id
 
-        self.console.print("[bold blue]Initializing MedGemma Agent...[/bold blue]")
+        self.console.print("[bold blue]Initializing MedicAItion Agent...[/bold blue]")
 
         with Progress(
             SpinnerColumn(),
@@ -52,7 +52,7 @@ class MedGemmaCLI:
             self.registry = ToolRegistry()
             self.registry.auto_discover()
 
-            self.agent = MedGemmaAgent(config=config)
+            self.agent = MedicAItionAgent(config=config)
             await self.agent.initialize()
 
             progress.remove_task(task)
@@ -63,9 +63,9 @@ class MedGemmaCLI:
     def print_welcome(self):
         """Print welcome message."""
         welcome_text = """
-# MedGemma Agent Framework
+# MedicAItion Agent Framework
 
-A modular medical AI assistant powered by MedGemma.
+A modular medical AI assistant powered by MedicAItion.
 
 **Available Commands:**
 - `/help` - Show this help message
@@ -215,7 +215,7 @@ Type your question or command to get started.
 
                 self.console.print(Panel(
                     Markdown(response),
-                    title="MedGemma",
+                    title="MedicAItion",
                     border_style="blue"
                 ))
 
@@ -235,7 +235,7 @@ Type your question or command to get started.
             if role == "user":
                 self.console.print(f"[bold cyan]You:[/bold cyan] {content}")
             else:
-                self.console.print(f"[bold blue]MedGemma:[/bold blue] {content[:200]}...")
+                self.console.print(f"[bold blue]MedicAItion:[/bold blue] {content[:200]}...")
             self.console.print()
 
     async def run_interactive(self):
@@ -303,7 +303,7 @@ Type your question or command to get started.
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""
     parser = argparse.ArgumentParser(
-        description="MedGemma Agent Framework CLI",
+        description="MedicAItion Agent Framework CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
@@ -351,7 +351,7 @@ async def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    cli = MedGemmaCLI()
+    cli = MedicAItionCLI()
 
     # For list-tools, only initialize the registry (no model)
     if args.list_tools:

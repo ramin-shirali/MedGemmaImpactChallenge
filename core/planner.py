@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
-from core.config import get_config, MedGemmaConfig
+from core.config import get_config, MedicAItionConfig
 from tools.base import ToolCategory, ToolOutput
 
 if TYPE_CHECKING:
@@ -233,7 +233,7 @@ class TaskPlanner:
     def __init__(
         self,
         registry: "ToolRegistry",
-        config: Optional[MedGemmaConfig] = None
+        config: Optional[MedicAItionConfig] = None
     ):
         """
         Initialize the planner.

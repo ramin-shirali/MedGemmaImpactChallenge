@@ -96,18 +96,18 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown."""
     global agent, registry
 
-    from core.agent import MedGemmaAgent
+    from core.agent import MedicAItionAgent
     from core.registry import ToolRegistry
-    from core.config import MedGemmaConfig
+    from core.config import MedicAItionConfig
 
-    config = MedGemmaConfig()
+    config = MedicAItionConfig()
 
     # Initialize registry and discover tools
     registry = ToolRegistry()
     registry.auto_discover()
 
     # Initialize agent
-    agent = MedGemmaAgent(config=config)
+    agent = MedicAItionAgent(config=config)
     await agent.initialize()
 
     yield

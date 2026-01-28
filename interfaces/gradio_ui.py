@@ -1,5 +1,5 @@
 """
-MedGemma Agent Framework - Gradio UI
+MedicAItion Agent Framework - Gradio UI
 
 Interactive web interface for the medical AI agent.
 """
@@ -26,13 +26,13 @@ async def initialize_agent():
     print("[1/5] Importing modules...", flush=True)
     sys.stdout.flush()
 
-    from core.agent import MedGemmaAgent
+    from core.agent import MedicAItionAgent
     from core.registry import ToolRegistry
-    from core.config import MedGemmaConfig
+    from core.config import MedicAItionConfig
 
     print("[2/5] Creating config...", flush=True)
     sys.stdout.flush()
-    config = MedGemmaConfig()
+    config = MedicAItionConfig()
     print(f"      skip_model_loading={config.model.skip_model_loading}", flush=True)
     print(f"      device={config.model.get_device()}", flush=True)
     sys.stdout.flush()
@@ -46,7 +46,7 @@ async def initialize_agent():
 
     print("[4/5] Creating agent and initializing...", flush=True)
     sys.stdout.flush()
-    agent = MedGemmaAgent(config=config)
+    agent = MedicAItionAgent(config=config)
     await agent.initialize()
 
     print("[5/5] Checking model status...", flush=True)
@@ -430,11 +430,11 @@ def create_ui() -> gr.Blocks:
         input_placeholder_color_dark="#456060",
     )
 
-    with gr.Blocks(title="MedGemma Agent", theme=theme) as demo:
+    with gr.Blocks(title="MedicAItion Agent", theme=theme) as demo:
         gr.Markdown("""
-        # MedGemma Agent Framework
+        # MedicAItion Agent Framework
 
-        A modular medical AI assistant powered by MedGemma. This demo provides access to various
+        A modular medical AI assistant powered by MedicAItion. This demo provides access to various
         medical analysis tools including image analysis, document parsing, and clinical calculators.
 
         **Disclaimer:** This is for demonstration purposes only. Not for clinical use.
@@ -576,7 +576,7 @@ def launch(share: bool = False, server_port: int = 7860):
 
     # Auto-initialize agent before launching
     print("=" * 50, flush=True)
-    print("Initializing MedGemma Agent...", flush=True)
+    print("Initializing MedicAItion Agent...", flush=True)
     print("=" * 50, flush=True)
     sys.stdout.flush()
 

@@ -37,7 +37,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Type, Union
 
-from core.config import get_config, MedGemmaConfig
+from core.config import get_config, MedicAItionConfig
 from tools.base import (
     BaseTool,
     ToolCategory,
@@ -73,7 +73,7 @@ class ToolRegistry:
     Thread-safe and supports async operations.
     """
 
-    def __init__(self, config: Optional[MedGemmaConfig] = None):
+    def __init__(self, config: Optional[MedicAItionConfig] = None):
         """
         Initialize the tool registry.
 
@@ -88,7 +88,7 @@ class ToolRegistry:
         self._shutdown = False
 
     @property
-    def config(self) -> MedGemmaConfig:
+    def config(self) -> MedicAItionConfig:
         """Get the configuration."""
         return self._config
 
@@ -455,7 +455,7 @@ class ToolRegistry:
 _registry: Optional[ToolRegistry] = None
 
 
-def get_registry(config: Optional[MedGemmaConfig] = None) -> ToolRegistry:
+def get_registry(config: Optional[MedicAItionConfig] = None) -> ToolRegistry:
     """
     Get the global tool registry instance.
 

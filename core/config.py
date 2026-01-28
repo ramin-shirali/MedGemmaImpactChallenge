@@ -9,7 +9,7 @@ This module handles all configuration settings for the MedGemma agent framework:
 - Resource limits and timeouts
 
 Usage:
-    from core.config import get_config, MedGemmaConfig
+    from core.config import get_config, MedicAItionConfig
 
     # Get default configuration
     config = get_config()
@@ -395,7 +395,7 @@ class SafetyConfig(BaseModel):
     )
 
 
-class MedGemmaConfig(BaseSettings):
+class MedicAItionConfig(BaseSettings):
     """
     Main configuration class for MedGemma Agent Framework.
 
@@ -505,7 +505,7 @@ class MedGemmaConfig(BaseSettings):
         return self.model_dump()
 
     @classmethod
-    def from_file(cls, config_path: Path) -> "MedGemmaConfig":
+    def from_file(cls, config_path: Path) -> "MedicAItionConfig":
         """Load configuration from a YAML or JSON file."""
         import json
 
@@ -531,18 +531,18 @@ class MedGemmaConfig(BaseSettings):
 
 
 # Global configuration instance
-_config: Optional[MedGemmaConfig] = None
+_config: Optional[MedicAItionConfig] = None
 
 
-def get_config() -> MedGemmaConfig:
+def get_config() -> MedicAItionConfig:
     """Get the global configuration instance."""
     global _config
     if _config is None:
-        _config = MedGemmaConfig()
+        _config = MedicAItionConfig()
     return _config
 
 
-def set_config(config: MedGemmaConfig) -> None:
+def set_config(config: MedicAItionConfig) -> None:
     """Set the global configuration instance."""
     global _config
     _config = config
